@@ -4,19 +4,31 @@ using System.Collections.Generic;
 
 public class TentacleRoot : MonoBehaviour
 {
-    // upVector, cylinder object, connect, body object, 
+    public bool removeCylinderAtRemoveBody = true;
 
     //    List<TentacleLeg> bodyList = new List<TentacleLeg>();
-    public List<TentacleBody> bodyList = new List<TentacleBody>();
+    List<TentacleBody> bodyList = new List<TentacleBody>();
 
-    public static Dictionary<string, TentacleState> states = new Dictionary<string, TentacleState>();
+    [SerializeField]
+    private int tentacleCount;
+    public int TentacleCount
+    {
+        get
+        {
+            return tentacleCount;
+        }
+        set
+        {
 
-    public string currentState = "drop";
+        }
+    }
 
-    public class TentacleState
+    public static Dictionary<string, TentacleProperties> propertiesDictionary = new Dictionary<string, TentacleProperties>();
+
+    public class TentacleProperties
     {
         // 휜 정도의 회복 속도
-        // recovery speed of bending
+        // recovery speed of bending degrees
         public float bendingRecoverySpeed = 0.2f; // 0 ~ 1
         // 최대로 휘는 정도
         // max bending degrees of the two objects
@@ -51,29 +63,215 @@ public class TentacleRoot : MonoBehaviour
 
         public float headSize = 1.0f;
         public float tailSize = 1.0f;
-    }
 
-    [SerializeField]
-    private int count;
+        public bool setUpVector = true;
+
+        public TentacleProperties()
+        {
+
+        }
+
+        public TentacleProperties(TentacleProperties tp)
+        {
+            bendingDegrees = tp.bendingDegrees;
+            bendingRecoverySpeed = tp.bendingRecoverySpeed;
+
+            modifyRecoverySpeed = tp.modifyRecoverySpeed;
+            rotationSpeedByModify = tp.rotationSpeedByModify;
+
+            lengthenRatio = tp.lengthenRatio;
+            minLength = tp.minLength;
+
+            solid = tp.solid;
+
+            useCylinder = tp.useCylinder;
+            cylinder = tp.cylinder;
+
+            thickness = tp.thickness;
+            headSize = tp.headSize;
+            tailSize = tp.tailSize;
+        }
+    }
 
     Hashtable whipTweenTheta = new Hashtable();
     Hashtable whipTweenPhi = new Hashtable();
-    float theta;
-    float phi;
+    
+    [SerializeField]
+    private float theta;
+    public float Theta
+    {
+        get
+        {
+            return theta;
+        }
+        set
+        {
+            theta = value % 360.0f;
+            if (theta < 0.0f) theta += 360.0f;
+
+            if ((theta < value && value > 360.0f) ||
+               (theta > value && value < 0.0f))
+            {
+                float varyingDegree = theta - value;
+
+                for(int i = 0; i < bodyList.Count; ++i)
+                {
+                    bodyList[i].theta += varyingDegree;
+                }
+            }
+        }
+    }
+
+    [SerializeField]
+    private float phi;
+    public float Phi
+    {
+        get
+        {
+            return phi;
+        }
+        set
+        {
+            phi = value % 360.0f;
+            if (phi < 0.0f) phi += 360.0f;
+
+            if ((phi < value && value > 360.0f) ||
+               (phi > value && value < 0.0f))
+            {
+                float varyingDegree = phi - value;
+
+                for (int i = 0; i < bodyList.Count; ++i)
+                {
+                    bodyList[i].phi += varyingDegree;
+                }
+            }
+        }
+    }
+
+    private void SetTheta(float value)
+    {
+        Theta = value;
+    }
+
+    private void SetPhi(float value)
+    {
+        Phi = value;
+    }
+
+    // 회전 속도
+    public static float rotationSpeed = 200.0f;
+    // 이동속도
+    public static float moveSpeed = 3.0f;
+
+    //float dd = Random.Range(1.0f, 5.0f);
+    //float ff = Random.Range(1.0f, 5.0f);
+    //void FixedUpdate()
+    //{
+    //    Theta += dd;
+    //    Phi += ff;
+    //}
+
+    /*
+   // void FixedUpdate()
+  //  {
+        //for (int i = 0; i < bodyList.Count; ++i)
+        //{
+
+        //    if (bodyList[i].properties.solid == true)
+        //        return;
+
+        //    float _theta, _phi;
+
+        //    if (bodyList[i].prev == null)
+        //    {
+        //        _theta = bodyList[i].root.Theta;
+        //        _phi = bodyList[i].root.Phi;
+        //    }
+        //    else
+        //    {
+        //        _theta = bodyList[i].prev.theta;
+        //        _phi = bodyList[i].prev.phi;
+        //    }
+
+        //    bodyList[i].deltaTheta = Mathf.Abs(_theta - bodyList[i].theta);
+        //    bodyList[i].deltaPhi = Mathf.Abs(_phi - bodyList[i].phi);
+
+        //    // 각도차가 비탄성정도보다 클 경우에만 각도변경
+        //    if (bodyList[i].deltaTheta > bodyList[i].properties.bendingDegrees)
+        //    {
+        //        bodyList[i].theta = bodyList[i].theta * (1 - bodyList[i].properties.bendingRecoverySpeed) + _theta * bodyList[i].properties.bendingRecoverySpeed;
+        //    }
+        //    if (bodyList[i].deltaPhi > bodyList[i].properties.bendingDegrees)
+        //    {
+        //        bodyList[i].phi = bodyList[i].phi * (1 - bodyList[i].properties.bendingRecoverySpeed) + _phi * bodyList[i].properties.bendingRecoverySpeed;
+        //    }
+
+        //    //
+
+        //    float phiAngleConformity = 1.0f - Mathf.Abs(((bodyList[i].theta + 360.0f) * bodyList[i].devide90) % 2 - 1.0f);
+
+        //    bodyList[i].ro = (bodyList[i].deltaPhi * phiAngleConformity + bodyList[i].deltaTheta) * bodyList[i].devide90 * bodyList[i].properties.lengthenRatio * bodyList[i].properties.minLength + bodyList[i].properties.minLength;
+
+        //    bodyList[i].followPosition = bodyList[i].followPosition * (1 - bodyList[i].properties.modifyRecoverySpeed) + bodyList[i].transform.position * bodyList[i].properties.modifyRecoverySpeed;
+
+        //    //
+
+        //    float theta2Rad = bodyList[i].theta * Mathf.Deg2Rad;
+        //    float phi2Rad = bodyList[i].phi * Mathf.Deg2Rad;
+
+        //    Vector3 addPosition = new Vector3();
+        //    addPosition.x += bodyList[i].ro * Mathf.Sin(theta2Rad) * Mathf.Cos(phi2Rad);
+        //    addPosition.y += bodyList[i].ro * Mathf.Cos(theta2Rad);
+        //    addPosition.z += bodyList[i].ro * Mathf.Sin(theta2Rad) * Mathf.Sin(phi2Rad);
+
+        //    Vector3 directionToNext = (bodyList[i].followPosition + addPosition) - bodyList[i].transform.position;
+
+        //    //
+
+        //    if (Vector3.Distance(bodyList[i].transform.position, bodyList[i].beforePosition) > TentacleBody.minDistanceForReverseOperation)
+        //    {
+        //        bodyList[i].ReverseOperation();
+        //        bodyList[i].beforePosition = bodyList[i].transform.position;
+        //    }
+
+        //    //
+
+        //    if (bodyList[i].next != null)
+        //    {
+        //        bodyList[i].next.transform.position = bodyList[i].followPosition + addPosition;
+
+        //        bodyList[i].transform.up = directionToNext.normalized;
+
+        //        if (bodyList[i].cylinder != null)
+        //        {
+        //            bodyList[i].cylinder.transform.up = directionToNext.normalized;
+
+        //            float distanceToNextHalf = Vector3.Distance(bodyList[i].transform.position, bodyList[i].next.transform.position) * 0.5f;
+        //            bodyList[i].cylinder.transform.localScale = new Vector3(
+        //                bodyList[i].properties.thickness,
+        //                distanceToNextHalf,
+        //                bodyList[i].properties.thickness);
+
+        //            bodyList[i].cylinder.transform.position = bodyList[i].transform.position + bodyList[i].cylinder.transform.up * distanceToNextHalf;
+        //        }
+        //    }
+        //}
+  //  }
+  */
 
     void Awake()
     {
-        TentacleState drop = new TentacleState();
+        TentacleProperties drop = new TentacleProperties();
 
-        states["drop"] = drop;
+        propertiesDictionary["drop"] = drop;
 
-        TentacleState swing = new TentacleState();
+        TentacleProperties swing = new TentacleProperties();
 
         swing.rotationSpeedByModify = 0.2f;
         swing.lengthenRatio = 5.0f;
         swing.useCylinder = false;
 
-        states["swing"] = swing;
+        propertiesDictionary["swing"] = swing;
 
         whipTweenTheta.Add("from", 0.0f);
         whipTweenTheta.Add("to", 0.0f);
@@ -89,25 +287,21 @@ public class TentacleRoot : MonoBehaviour
 
     }
 
-    private void SetTheta(float value)
+    void OnDestroy()
     {
-        theta = value;
+        bodyList.Clear();
     }
-
-    private void SetPhi(float value)
-    {
-        phi = value;
-    }
-
-    // 회전 속도
-    public static float rotationSpeed = 200.0f;
-    // 이동속도
-    public static float moveSpeed = 3.0f;
-
-    Vector3 beforePosition = new Vector3();
 
     void Update()
     {
+
+        if (bodyList.Count > 0)
+        {
+            bodyList[0].transform.position = transform.position;
+            Phi = bodyList[0].phi;
+            Theta = bodyList[0].theta;
+        }
+
         //if (Input.GetKey(KeyCode.A))
         //    bodyList[0].Theta += Time.deltaTime * rotationSpeed;
         //if (Input.GetKey(KeyCode.S))
@@ -130,15 +324,6 @@ public class TentacleRoot : MonoBehaviour
         //if (Input.GetKey(KeyCode.Space))
         //    transform.position = transform.position + new Vector3(0.0f, Time.deltaTime * moveSpeed, 0.0f);
 
-
-        bodyList[0].transform.position = transform.position;
-
-        if (Vector3.Distance(transform.position, beforePosition) > 0.01f)
-        {
-            bodyList[0].ReverseOperation();
-        }
-        beforePosition = transform.position;
-
         //if (Input.GetKeyDown(KeyCode.Q))
         //{
         //    float _x = Random.Range(-1.0f, 1.0f);
@@ -148,256 +333,262 @@ public class TentacleRoot : MonoBehaviour
         //    float _theta = Random.Range(0.0f, 360.0f);
         //    float _phi = Random.Range(0.0f, 360.0f);
 
-        //    states[currentState] = new TentacleState();
+        //    propertiesDictionary[currentState] = new TentacleState();
         //    // state 를 조작
 
         //    Whipping(new Vector3(_x, _y, _z), _theta, _phi, _theta + 270.0f, _phi + 90.0f, 0.5f,-1.0f);
         //}
     }
 
-    //public List<GameObject> SetBodyObjects(GameObject obj)
-    //{
-    //    List<GameObject> ret = new List<GameObject>(count);
-
-    //    for(int i = 0; i < count; ++i)
-    //    {
-    //        ret.Add(Instantiate(obj) as GameObject);
-
-    //        ret[i].
-    //    }
-    //}
-
-    public void SetCylinder(string name)
+    public void SetTentacleProperties(params string[] propertiesName)
     {
-        for (int i = 0; i < bodyList.Count - 1; ++i)
+        string nonvalidatedName = IsValidKey(propertiesName);
+        if (nonvalidatedName != null)
         {
-            bodyList[i].cylinder = VEasyPoolerManager.GetObjectRequest(name);
+            Debug.LogWarning(nonvalidatedName + " is undeclared propertiesDictionary name");
+            return;
         }
+
+        int nameCount = propertiesName.Length;
+
+        for (int i = 0; i < bodyList.Count; ++i)
+        {
+            string key = propertiesName[i % nameCount];
+            bodyList[i].properties = new TentacleProperties(propertiesDictionary[key]);
+        }
+
+    }
+
+    string IsValidKey(params string[] propertiesName)
+    {
+        for(int i = 0; i < propertiesName.Length; ++i)
+        {
+            if (propertiesDictionary.ContainsKey(propertiesName[i]) == false)
+                return propertiesName[i];
+        }
+
+        return null;
     }
 
     void SetDefaultTentacleState()
     {
-        TentacleState state = new TentacleState();
+        TentacleProperties state = new TentacleProperties();
         state.bendingRecoverySpeed = 1.0f;
         state.bendingDegrees = 0.0f;
         state.modifyRecoverySpeed = 1.0f; // 0 ~ 1
         state.rotationSpeedByModify = 0.0f; // 0 ~ 1
         state.lengthenRatio = 0.0f;
 
-        states["default"] = state;
+        propertiesDictionary["default"] = state;
     }
 
-    public void FiniteWhipping(Vector3 pos, float beginTheta, float beginPhi, float endTheta, float endPhi, float whipTime, float lifeTime)
+    //
+
+    public void AddBodyObject(GameObject obj)
     {
-        string backupState = currentState;
-
-        SetDefaultTentacleState();
-        currentState = "default";
-
-        Vector3 backupPos = transform.position;
-        //        transform.position = pos;
-
-        bodyList[0].Theta = beginTheta;
-        bodyList[0].Phi = beginPhi;
-
-        whipTweenTheta["from"] = beginTheta;
-        whipTweenTheta["to"] = endTheta;
-        whipTweenTheta["time"] = whipTime;
-
-        whipTweenPhi["from"] = beginPhi;
-        whipTweenPhi["to"] = endPhi;
-        whipTweenPhi["time"] = whipTime;
-
-        iTween.ValueTo(gameObject, whipTweenTheta);
-        iTween.ValueTo(gameObject, whipTweenPhi);
-
-        StopAllCoroutines();
-        StartCoroutine(FiniteWhipTentacle(backupPos, backupState, whipTime, lifeTime));
-    }
-
-    IEnumerator FiniteWhipTentacle(Vector3 pos, string state, float limitTime, float lifeTime)
-    {
-
-        yield return new WaitForSeconds(0.1f);
-
-        currentState = state;
-
-        float time = 0.0f;
-
-        while (time < limitTime)
-        {
-            time += Time.deltaTime;
-
-            bodyList[0].Theta = theta;
-            bodyList[0].Phi = phi;
-
-            yield return null;
-        }
-
-        //        transform.position = pos;
-
-        if (lifeTime < 0.0f) yield break;
-
-        yield return new WaitForSeconds(lifeTime);
-
-        DestroyTentacle();
-    }
-
-    public void Whipping(Vector3 pos, float beginTheta, float beginPhi, float endTheta, float endPhi, float whipTime)
-    {
-        string backupState = currentState;
-
-        SetDefaultTentacleState();
-        currentState = "default";
-
-        Vector3 backupPos = transform.position;
-        //        transform.position = pos;
-
-        bodyList[0].Theta = beginTheta;
-        bodyList[0].Phi = beginPhi;
-
-        whipTweenTheta["from"] = beginTheta;
-        whipTweenTheta["to"] = endTheta;
-        whipTweenTheta["time"] = whipTime;
-
-        whipTweenPhi["from"] = beginPhi;
-        whipTweenPhi["to"] = endPhi;
-        whipTweenPhi["time"] = whipTime;
-
-        iTween.ValueTo(gameObject, whipTweenTheta);
-        iTween.ValueTo(gameObject, whipTweenPhi);
-
-        StopAllCoroutines();
-        StartCoroutine(WhipTentacle(backupPos, backupState, whipTime));
-    }
-
-    IEnumerator WhipTentacle(Vector3 pos, string state, float limitTime)
-    {
-
-        yield return new WaitForSeconds(0.01f);
-
-        currentState = state;
-
-        float time = 0.0f;
-
-        while (time < limitTime)
-        {
-            time += Time.deltaTime;
-
-            bodyList[0].Theta = theta;
-            bodyList[0].Phi = phi;
-
-            yield return null;
-        }
-
-
-    }
-
-    public void SetBodyObjects(List<GameObject> obj)
-    {
-        // TODO 이미 set 된 경우 기존의 obj 를 바꾸는 식으로.
-
-        bodyList.Clear();
-
-        for (int i = 0; i < obj.Count; ++i)
-        {
-            float size = states[currentState].headSize + (states[currentState].tailSize - states[currentState].headSize) * i / obj.Count;
-            obj[i].transform.localScale = new Vector3(size, size, size);
-
-            bodyList.Add(obj[i].AddComponent<TentacleBody>());
-
-            // TODO 각각의 초기위치를 설정할 방법 생각할 것
-            obj[i].transform.position = transform.position;
-
-            bodyList[i].root = this;
-
-            if (i == 0)
-            {
-                bodyList[i].prev = null;
-            }
-            else if (i == obj.Count - 1)
-            {
-                bodyList[i].next = null;
-                bodyList[i].prev = bodyList[i - 1];
-                bodyList[i - 1].next = bodyList[i];
-            }
-            else
-            {
-                bodyList[i].prev = bodyList[i - 1];
-                bodyList[i - 1].next = bodyList[i];
-            }
-        }
+        List<GameObject> list = new List<GameObject>(1);
+        list.Add(obj);
+        AddBodyObject(list);
     }
 
     public void AddBodyObject(List<GameObject> obj)
     {
-        if (bodyList.Count == 0)
+        InsertBodyObject(bodyList.Count, obj);
+    }
+
+    public void InsertBodyObject(int idx, GameObject obj)
+    {
+        List<GameObject> list = new List<GameObject>(1);
+        list.Add(obj);
+        InsertBodyObject(idx, list);
+    }
+
+    public void InsertBodyObject(int idx, List<GameObject> obj)
+    {
+        if (idx < 0 || idx > bodyList.Count)
         {
-            SetBodyObjects(obj);
+            Debug.LogWarning("wrong index");
             return;
         }
 
+        for(int i = 0; i < obj.Count; ++i)
+        {
+            if(obj[i] == null)
+            {
+                Debug.LogWarning("wrong GameObject");
+                return;
+            }
+        }
+        
+        List<TentacleBody> insertBodyList = new List<TentacleBody>(obj.Count);
+
         for (int i = 0; i < obj.Count; ++i)
         {
-            bodyList.Add(obj[i].AddComponent<TentacleBody>());
+            TentacleBody tb = obj[i].AddComponent<TentacleBody>();
+            TentacleBody prevTb = null;
+            
+            insertBodyList.Add(tb);
 
-            int idx = bodyList.Count - 1;
-
-            obj[i].transform.position = bodyList[idx - 1].transform.position;
-
-            bodyList[idx].root = this;
-
-            if (i == obj.Count - 1)
+            if (i == 0)
             {
-                bodyList[idx].next = null;
-                bodyList[idx].prev = bodyList[idx - 1];
-                bodyList[idx - 1].next = bodyList[idx];
+                if (idx == 0)
+                    tb.transform.position = transform.position;
+                else
+                {
+                    tb.transform.position = bodyList[idx - 1].transform.position;
+
+                    bodyList[idx - 1].next = tb;
+                }
             }
             else
+                tb.transform.position = obj[i - 1].transform.position;
+
+            if(i == obj.Count - 1)
             {
-                bodyList[idx].prev = bodyList[idx - 1];
-                bodyList[idx - 1].next = bodyList[idx];
+                if(bodyList.Count > 0)
+                    bodyList[idx + obj.Count].prev = tb;
             }
+
+            tb.root = this;
+            tb.prev = prevTb;
+            if (prevTb != null)
+                prevTb.next = tb;
+            if (i == obj.Count - 1)
+                tb.next = null;
+
+            prevTb = tb;
         }
 
-        for (int i = 0; i < bodyList.Count; ++i)
-        {
-            float size = states[currentState].headSize + (states[currentState].tailSize - states[currentState].headSize) * i / obj.Count;
-            bodyList[i].transform.localScale = new Vector3(size, size, size);
-        }
+        bodyList.InsertRange(idx, insertBodyList);
     }
 
-    public void RemoveBodyObject(int count)
+    //
+
+    public bool RemoveBodyObject(TentacleBody tb)
     {
-        while (count > 0)
-        {
-            count--;
-
-            bodyList[bodyList.Count - 1].DestroyTentacle();
-            bodyList.RemoveAt(bodyList.Count - 1);
-        }
-
-        bodyList[bodyList.Count - 1].next = null;
+        return bodyList.Remove(tb);
     }
 
-    public void SetBodyObjects(GameObject[] obj)
+    public void RemoveBodyObject(int idx)
     {
-        for (int i = 0; i < obj.Length; ++i)
-        {
-            //            obj[i].AddComponent<TentacleBody>();
-        }
+        bodyList.RemoveAt(idx);
     }
 
-    public void DestroyTentacle()
+    public void RemoveBodyObject(int idx, int count)
     {
-        while (bodyList.Count > 0)
-        {
-            bodyList[bodyList.Count - 1].DestroyTentacle();
-
-            bodyList.RemoveAt(bodyList.Count - 1);
-        }
-
-        Destroy(this);
+        bodyList.RemoveRange(idx, count);
     }
+
+    public void ClearBodyObject()
+    {
+        bodyList.Clear();
+    }
+
+    //public void FiniteWhipping(Vector3 pos, float beginTheta, float beginPhi, float endTheta, float endPhi, float whipTime, float lifeTime)
+    //{
+    //    string backupState = currentState;
+
+    //    SetDefaultTentacleState();
+    //    currentState = "default";
+
+    //    Vector3 backupPos = transform.position;
+    //    //        transform.position = pos;
+
+    //    bodyList[0].theta = beginTheta;
+    //    bodyList[0].phi = beginPhi;
+
+    //    whipTweenTheta["from"] = beginTheta;
+    //    whipTweenTheta["to"] = endTheta;
+    //    whipTweenTheta["time"] = whipTime;
+
+    //    whipTweenPhi["from"] = beginPhi;
+    //    whipTweenPhi["to"] = endPhi;
+    //    whipTweenPhi["time"] = whipTime;
+
+    //    iTween.ValueTo(gameObject, whipTweenTheta);
+    //    iTween.ValueTo(gameObject, whipTweenPhi);
+
+    //    StopAllCoroutines();
+    //    StartCoroutine(FiniteWhipTentacle(backupPos, backupState, whipTime, lifeTime));
+    //}
+
+    //IEnumerator FiniteWhipTentacle(Vector3 pos, string state, float limitTime, float lifeTime)
+    //{
+
+    //    yield return new WaitForSeconds(0.1f);
+
+    //    currentState = state;
+
+    //    float time = 0.0f;
+
+    //    while (time < limitTime)
+    //    {
+    //        time += Time.deltaTime;
+
+    //        bodyList[0].theta = theta;
+    //        bodyList[0].phi = phi;
+
+    //        yield return null;
+    //    }
+
+    //    //        transform.position = pos;
+
+    //    if (lifeTime < 0.0f) yield break;
+
+    //    yield return new WaitForSeconds(lifeTime);
+
+    //    DestroyTentacle();
+    //}
+
+    //public void Whipping(Vector3 pos, float beginTheta, float beginPhi, float endTheta, float endPhi, float whipTime)
+    //{
+    //    string backupState = currentState;
+
+    //    SetDefaultTentacleState();
+    //    currentState = "default";
+
+    //    Vector3 backupPos = transform.position;
+    //    //        transform.position = pos;
+
+    //    bodyList[0].theta = beginTheta;
+    //    bodyList[0].phi = beginPhi;
+
+    //    whipTweenTheta["from"] = beginTheta;
+    //    whipTweenTheta["to"] = endTheta;
+    //    whipTweenTheta["time"] = whipTime;
+
+    //    whipTweenPhi["from"] = beginPhi;
+    //    whipTweenPhi["to"] = endPhi;
+    //    whipTweenPhi["time"] = whipTime;
+
+    //    iTween.ValueTo(gameObject, whipTweenTheta);
+    //    iTween.ValueTo(gameObject, whipTweenPhi);
+
+    //    StopAllCoroutines();
+    //    StartCoroutine(WhipTentacle(backupPos, backupState, whipTime));
+    //}
+
+    //IEnumerator WhipTentacle(Vector3 pos, string state, float limitTime)
+    //{
+
+    //    yield return new WaitForSeconds(0.01f);
+
+    //    currentState = state;
+
+    //    float time = 0.0f;
+
+    //    while (time < limitTime)
+    //    {
+    //        time += Time.deltaTime;
+
+    //        bodyList[0].theta = theta;
+    //        bodyList[0].phi = phi;
+
+    //        yield return null;
+    //    }
+
+
+    //}
+
 
 }
