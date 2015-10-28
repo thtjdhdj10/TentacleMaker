@@ -9,21 +9,15 @@ public class TentacleRoot : MonoBehaviour
     //    List<TentacleLeg> bodyList = new List<TentacleLeg>();
     List<TentacleBody> bodyList = new List<TentacleBody>();
 
-    [SerializeField]
-    private int tentacleCount;
-    public int TentacleCount
+    public int BodyCount
     {
         get
         {
-            return tentacleCount;
-        }
-        set
-        {
-
+            return bodyList.Count;
         }
     }
 
-    public static Dictionary<string, TentacleProperties> propertiesDictionary = new Dictionary<string, TentacleProperties>();
+    public static Dictionary<string, TentacleProperties> propertiesDic = new Dictionary<string, TentacleProperties>();
 
     public class TentacleProperties
     {
@@ -106,17 +100,42 @@ public class TentacleRoot : MonoBehaviour
         }
         set
         {
-            theta = value % 360.0f;
-            if (theta < 0.0f) theta += 360.0f;
+            //    float deltaTheta = theta;
 
-            if ((theta < value && value > 360.0f) ||
-               (theta > value && value < 0.0f))
+            //    theta = value % 360.0f;
+            //    if (theta < 0.0f) theta += 360.0f;
+
+            //    deltaTheta -= theta;
+
+            //    float varyingDegree = theta - value;
+
+            //    if ((theta < value && value > 360.0f  && deltaTheta > 0.0f && deltaTheta < 180.0f) ||
+            //       (theta > value && value < -0.0f  && deltaTheta > 180.0f && deltaTheta < 360.0f))
+            //    {
+            //        for (int i = 1; i < bodyList.Count; ++i)
+            //        {
+            //            bodyList[i].theta += varyingDegree;
+            //        }
+            //    }
+            //}
+
+            float _theta = value % 360.0f;
+            if (_theta < 0.0f) _theta += 360.0f;
+            float deltaTheta = theta - _theta;
+            theta = _theta;
+
+            if(deltaTheta > 180.0f && deltaTheta < 360.0f && value > 360.0f)
             {
-                float varyingDegree = theta - value;
-
                 for(int i = 0; i < bodyList.Count; ++i)
                 {
-                    bodyList[i].theta += varyingDegree;
+                    bodyList[i].theta -= 360.0f;
+                }
+            }
+            else if(deltaTheta < -180.0f && deltaTheta > -360.0f && value < 0.0f)
+            {
+                for(int i = 0; i < bodyList.Count; ++i)
+                {
+                    bodyList[i].theta += 360.0f;
                 }
             }
         }
@@ -132,19 +151,44 @@ public class TentacleRoot : MonoBehaviour
         }
         set
         {
-            phi = value % 360.0f;
-            if (phi < 0.0f) phi += 360.0f;
 
-            if ((phi < value && value > 360.0f) ||
-               (phi > value && value < 0.0f))
+            float _phi = value % 360.0f;
+            if (_phi < 0.0f) _phi += 360.0f;
+            float deltaPhi = phi - _phi;
+            phi = _phi;
+
+            if (deltaPhi > 180.0f && deltaPhi < 360.0f && value > 360.0f)
             {
-                float varyingDegree = phi - value;
-
                 for (int i = 0; i < bodyList.Count; ++i)
                 {
-                    bodyList[i].phi += varyingDegree;
+                    bodyList[i].phi -= 360.0f;
                 }
             }
+            else if (deltaPhi < -180.0f && deltaPhi > -360.0f && value < 0.0f)
+            {
+                for (int i = 0; i < bodyList.Count; ++i)
+                {
+                    bodyList[i].phi += 360.0f;
+                }
+            }
+
+            //float deltaPhi = phi;
+
+            //phi = value % 360.0f;
+            //if (phi < 0.0f) phi += 360.0f;
+
+            //deltaPhi -= phi;
+
+            //float varyingDegree = phi - value;
+
+            //if ((phi < value && value > 360.0f && deltaPhi > 0.0f && deltaPhi < 180.0f) ||
+            //   (phi > value && value < -0.0f && deltaPhi > 180.0f && deltaPhi < 360.0f))
+            //{
+            //    for (int i = 1; i < bodyList.Count; ++i)
+            //    {
+            //        bodyList[i].phi += varyingDegree;
+            //    }
+            //}
         }
     }
 
@@ -171,111 +215,19 @@ public class TentacleRoot : MonoBehaviour
     //    Phi += ff;
     //}
 
-    /*
-   // void FixedUpdate()
-  //  {
-        //for (int i = 0; i < bodyList.Count; ++i)
-        //{
-
-        //    if (bodyList[i].properties.solid == true)
-        //        return;
-
-        //    float _theta, _phi;
-
-        //    if (bodyList[i].prev == null)
-        //    {
-        //        _theta = bodyList[i].root.Theta;
-        //        _phi = bodyList[i].root.Phi;
-        //    }
-        //    else
-        //    {
-        //        _theta = bodyList[i].prev.theta;
-        //        _phi = bodyList[i].prev.phi;
-        //    }
-
-        //    bodyList[i].deltaTheta = Mathf.Abs(_theta - bodyList[i].theta);
-        //    bodyList[i].deltaPhi = Mathf.Abs(_phi - bodyList[i].phi);
-
-        //    // 각도차가 비탄성정도보다 클 경우에만 각도변경
-        //    if (bodyList[i].deltaTheta > bodyList[i].properties.bendingDegrees)
-        //    {
-        //        bodyList[i].theta = bodyList[i].theta * (1 - bodyList[i].properties.bendingRecoverySpeed) + _theta * bodyList[i].properties.bendingRecoverySpeed;
-        //    }
-        //    if (bodyList[i].deltaPhi > bodyList[i].properties.bendingDegrees)
-        //    {
-        //        bodyList[i].phi = bodyList[i].phi * (1 - bodyList[i].properties.bendingRecoverySpeed) + _phi * bodyList[i].properties.bendingRecoverySpeed;
-        //    }
-
-        //    //
-
-        //    float phiAngleConformity = 1.0f - Mathf.Abs(((bodyList[i].theta + 360.0f) * bodyList[i].devide90) % 2 - 1.0f);
-
-        //    bodyList[i].ro = (bodyList[i].deltaPhi * phiAngleConformity + bodyList[i].deltaTheta) * bodyList[i].devide90 * bodyList[i].properties.lengthenRatio * bodyList[i].properties.minLength + bodyList[i].properties.minLength;
-
-        //    bodyList[i].followPosition = bodyList[i].followPosition * (1 - bodyList[i].properties.modifyRecoverySpeed) + bodyList[i].transform.position * bodyList[i].properties.modifyRecoverySpeed;
-
-        //    //
-
-        //    float theta2Rad = bodyList[i].theta * Mathf.Deg2Rad;
-        //    float phi2Rad = bodyList[i].phi * Mathf.Deg2Rad;
-
-        //    Vector3 addPosition = new Vector3();
-        //    addPosition.x += bodyList[i].ro * Mathf.Sin(theta2Rad) * Mathf.Cos(phi2Rad);
-        //    addPosition.y += bodyList[i].ro * Mathf.Cos(theta2Rad);
-        //    addPosition.z += bodyList[i].ro * Mathf.Sin(theta2Rad) * Mathf.Sin(phi2Rad);
-
-        //    Vector3 directionToNext = (bodyList[i].followPosition + addPosition) - bodyList[i].transform.position;
-
-        //    //
-
-        //    if (Vector3.Distance(bodyList[i].transform.position, bodyList[i].beforePosition) > TentacleBody.minDistanceForReverseOperation)
-        //    {
-        //        bodyList[i].ReverseOperation();
-        //        bodyList[i].beforePosition = bodyList[i].transform.position;
-        //    }
-
-        //    //
-
-        //    if (bodyList[i].next != null)
-        //    {
-        //        bodyList[i].next.transform.position = bodyList[i].followPosition + addPosition;
-
-        //        bodyList[i].transform.up = directionToNext.normalized;
-
-        //        if (bodyList[i].cylinder != null)
-        //        {
-        //            bodyList[i].cylinder.transform.up = directionToNext.normalized;
-
-        //            float distanceToNextHalf = Vector3.Distance(bodyList[i].transform.position, bodyList[i].next.transform.position) * 0.5f;
-        //            bodyList[i].cylinder.transform.localScale = new Vector3(
-        //                bodyList[i].properties.thickness,
-        //                distanceToNextHalf,
-        //                bodyList[i].properties.thickness);
-
-        //            bodyList[i].cylinder.transform.position = bodyList[i].transform.position + bodyList[i].cylinder.transform.up * distanceToNextHalf;
-        //        }
-        //    }
-        //}
-  //  }
-  */
-
     void Awake()
     {
-        TentacleProperties drop = new TentacleProperties();
+        TentacleProperties defaultPropertiex = new TentacleProperties();
 
-        propertiesDictionary["drop"] = drop;
+        propertiesDic["default"] = defaultPropertiex;
 
-        TentacleProperties swing = new TentacleProperties();
+    }
 
-        swing.rotationSpeedByModify = 0.2f;
-        swing.lengthenRatio = 5.0f;
-        swing.useCylinder = false;
-
-        propertiesDictionary["swing"] = swing;
-
+    void Start()
+    {
         whipTweenTheta.Add("from", 0.0f);
-        whipTweenTheta.Add("to", 0.0f);
-        whipTweenTheta.Add("time", 0.0f);
+        whipTweenTheta.Add("to", 360.0f);
+        whipTweenTheta.Add("time", 2.0f);
         whipTweenTheta.Add("easetype", iTween.EaseType.easeOutSine);
         whipTweenTheta.Add("onupdate", "SetTheta");
 
@@ -284,7 +236,6 @@ public class TentacleRoot : MonoBehaviour
         whipTweenPhi.Add("time", 0.0f);
         whipTweenPhi.Add("easetype", iTween.EaseType.easeOutSine);
         whipTweenPhi.Add("onupdate", "SetPhi");
-
     }
 
     void OnDestroy()
@@ -324,20 +275,13 @@ public class TentacleRoot : MonoBehaviour
         //if (Input.GetKey(KeyCode.Space))
         //    transform.position = transform.position + new Vector3(0.0f, Time.deltaTime * moveSpeed, 0.0f);
 
-        //if (Input.GetKeyDown(KeyCode.Q))
-        //{
-        //    float _x = Random.Range(-1.0f, 1.0f);
-        //    float _y = Random.Range(-1.0f, 1.0f);
-        //    float _z = Random.Range(-1.0f, 1.0f);
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            whipTweenTheta["from"] = theta;
+            whipTweenTheta["to"] = theta + 360.0f;
 
-        //    float _theta = Random.Range(0.0f, 360.0f);
-        //    float _phi = Random.Range(0.0f, 360.0f);
-
-        //    propertiesDictionary[currentState] = new TentacleState();
-        //    // state 를 조작
-
-        //    Whipping(new Vector3(_x, _y, _z), _theta, _phi, _theta + 270.0f, _phi + 90.0f, 0.5f,-1.0f);
-        //}
+            iTween.ValueTo(gameObject, whipTweenTheta);
+        }
     }
 
     public void SetTentacleProperties(params string[] propertiesName)
@@ -345,7 +289,7 @@ public class TentacleRoot : MonoBehaviour
         string nonvalidatedName = IsValidKey(propertiesName);
         if (nonvalidatedName != null)
         {
-            Debug.LogWarning(nonvalidatedName + " is undeclared propertiesDictionary name");
+            Debug.LogWarning(nonvalidatedName + " is undeclared propertiesDic name");
             return;
         }
 
@@ -354,7 +298,7 @@ public class TentacleRoot : MonoBehaviour
         for (int i = 0; i < bodyList.Count; ++i)
         {
             string key = propertiesName[i % nameCount];
-            bodyList[i].properties = new TentacleProperties(propertiesDictionary[key]);
+            bodyList[i].properties = new TentacleProperties(propertiesDic[key]);
         }
 
     }
@@ -363,23 +307,11 @@ public class TentacleRoot : MonoBehaviour
     {
         for(int i = 0; i < propertiesName.Length; ++i)
         {
-            if (propertiesDictionary.ContainsKey(propertiesName[i]) == false)
+            if (propertiesDic.ContainsKey(propertiesName[i]) == false)
                 return propertiesName[i];
         }
 
         return null;
-    }
-
-    void SetDefaultTentacleState()
-    {
-        TentacleProperties state = new TentacleProperties();
-        state.bendingRecoverySpeed = 1.0f;
-        state.bendingDegrees = 0.0f;
-        state.modifyRecoverySpeed = 1.0f; // 0 ~ 1
-        state.rotationSpeedByModify = 0.0f; // 0 ~ 1
-        state.lengthenRatio = 0.0f;
-
-        propertiesDictionary["default"] = state;
     }
 
     //
@@ -422,12 +354,22 @@ public class TentacleRoot : MonoBehaviour
         
         List<TentacleBody> insertBodyList = new List<TentacleBody>(obj.Count);
 
+        TentacleBody prevTb = null;
+
         for (int i = 0; i < obj.Count; ++i)
         {
             TentacleBody tb = obj[i].AddComponent<TentacleBody>();
-            TentacleBody prevTb = null;
             
             insertBodyList.Add(tb);
+
+            tb.root = this;
+            tb.prev = prevTb;
+            if (prevTb != null)
+                prevTb.next = tb;
+            if (i == obj.Count - 1)
+                tb.next = null;
+
+            prevTb = tb;
 
             if (i == 0)
             {
@@ -443,20 +385,11 @@ public class TentacleRoot : MonoBehaviour
             else
                 tb.transform.position = obj[i - 1].transform.position;
 
-            if(i == obj.Count - 1)
+            if (i == obj.Count - 1)
             {
-                if(bodyList.Count > 0)
+                if (bodyList.Count > 0)
                     bodyList[idx + obj.Count].prev = tb;
             }
-
-            tb.root = this;
-            tb.prev = prevTb;
-            if (prevTb != null)
-                prevTb.next = tb;
-            if (i == obj.Count - 1)
-                tb.next = null;
-
-            prevTb = tb;
         }
 
         bodyList.InsertRange(idx, insertBodyList);
