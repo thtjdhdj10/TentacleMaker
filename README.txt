@@ -17,7 +17,9 @@ public 이기 때문에 새로운 촉수의 속성을 정의하고 싶다면 직
 key 값은 string 이므로, 속성의 이름을 적당히 설정해서 쓰면 됨.
 
 
-각 root 는 속성값의 이름 중 하나를 public 멤버로 가지고 있다. 이 값을 통해 root 의 속성을 바꿀 수 있다.
+각 body 는 public properties 를 하나씩 가지고 있다. 이 값을 직접 접근하여 속성 값을 정하거나.
+
+root 에 있는 SetTentacleProperties 함수로 설정하면 된다.
 
 
 
